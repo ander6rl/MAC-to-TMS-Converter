@@ -1,0 +1,75 @@
+// existing columns in MAC to new
+Accession Number -> Object Number
+On loan / not at MAC ->
+2020-21 Inventory ->
+Row	->
+Shelf/Cabinet ->
+Box/Bay/Drawer ->
+Artist (if known) -> Constituent1
+Object Name -> Title1
+Date -> Date
+Culture -> Culture
+Materials -> Medium
+Dimensions (H x W x D cm) -> Dimensions
+Dimensions (H x W x D in) -> NAN (throw out inch)
+Object Condition -> ?
+Condition Report? -> ?
+Images? -> ?
+Research Doc? -> ?
+Flat File Folder? -> ?
+Scanned? -> ?
+Valuation ->
+Object Needs ->
+Object Notes ->
+
+//new columns in TMS from mac info
+FIRST PART OF Date -> Begin ISO // one column to split
+LAST PART OF Date -> End ISO // one column to split
+
+what does FCSC 1000 mean?
+
+TMS titles
+
+Object Number
+Department
+Classification
+Accession Method
+Accession Date
+Object Status
+Constituent1
+Title1
+Date
+Begin ISO Date
+End ISO Date
+Date  Date Remarks
+Medium
+Dimensions
+Description
+Credit Line
+Catalogue
+Raisonne
+Portfolio/Series
+Paper/Support
+Signed
+Mark(s)
+Inscription(s)
+Alternate Number1
+Alternate Number2
+Culture
+Period
+Object
+Type
+Notes
+Label
+Text
+Curatorial Remarks
+Provenance
+Bibliography
+State/Proof
+Exhibition History
+Published References
+Copyright
+Curator Approved
+Public Access
+On View
+Accountability	Virtual Object	Location	Location Date	Valuation Purpose1	Stated Value1	Currency1	Stated Date1	Attributes6	Attributes7	Attributes8	Geography Type	Continent	Country	State/Province	County/Subdivision	City	Township	River	Locale	Locus

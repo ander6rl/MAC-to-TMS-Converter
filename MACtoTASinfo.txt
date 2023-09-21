@@ -2,9 +2,9 @@
 Accession Number -> Object Number
 On loan / not at MAC ->
 2020-21 Inventory ->
-Row	->
-Shelf/Cabinet ->
-Box/Bay/Drawer ->
+Row	-> Location
+Shelf/Cabinet -> Location
+Box/Bay/Drawer -> Location
 Artist (if known) -> Constituent1
 Object Name -> Title1
 Date -> Date

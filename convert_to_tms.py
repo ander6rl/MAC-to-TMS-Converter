@@ -6,16 +6,26 @@ import string
 
 
 filename = "Copy_of_MAC_Collection"
-filename = filename + ".xlsx"
-print(f"File to convert: {filename}\n")
+if(input(f"Do you want a file name that is not {filename}? (y/yes): ")):
+    filename = input("Enter new filename: ")
 
-sheetname = input("Name of sheet: ")
-print(f"Your new file will be named {sheetname}.xlsx")
+filename = filename + ".xlsx"
+print(f"File to convert: {filename}")
+
+pagename = input("Name of excel page to convert: ")
+# print(f"Your new file will be named {pagename}.xlsx")
+destname = input("Destination file name: ")
+print(f"Your new file will be named {destname}.xlsx")
 # print()
+
+startrow = int(input("Enter the starting row: "))
+endrow = int(input("Enter the ending row: "))
 
 st = time.time()
 xls = pd.ExcelFile(filename)
-old_df = pd.read_excel(xls, sheet_name=sheetname, nrows=20)
+# old_df = pd.read_excel(xls, sheet_name=pagename, nrows=20)
+old_df = pd.read_excel(xls, sheet_name=pagename, skiprows=range(1, startrow), nrows=endrow - startrow + 1)
+
 
 nd = old_df.to_numpy()
 
@@ -328,7 +338,7 @@ for j in nd:
                 new_col = convert.get(old_col)
                 tms_list[new_order.index(new_col)] = column_val
                 splitdate = column_val.split(".")
-                tms_list[new_order.index("Accession Date")] = int(sheetname)
+                tms_list[new_order.index("Accession Date")] = int(pagename)
             elif old_col == "Date":
                 tms_list[new_order.index("Date")] = column_val
                 column_val = str(column_val)
@@ -361,7 +371,7 @@ for j in nd:
                 if new_col == "Notes":
                     # print(type(notes_str), type(old_col), type(column_val))
                     notes_str = notes_str + old_col + ": " + str(column_val) + "\n"
-                    print(notes_str)
+                    # print(notes_str)
                     # tms_list[new_order.index(new_col)] = notes_str.capitalize()
                 if new_col == "Constituent1" or new_col == "Culture":
                     tms_list[new_order.index(new_col)] = string.capwords(column_val, sep = None)
@@ -378,7 +388,7 @@ for j in nd:
 
 newer_df = pd.DataFrame(tms_nd, columns=new_order)
 # del newer_df[newer_df.columns[0]]
-sheetname = sheetname + ".xlsx"
+sheetname = destname + ".xlsx"
 newer_df.to_excel(sheetname)
 et = time.time()
 elapsed_time = et - st

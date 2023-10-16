@@ -15,7 +15,7 @@ print(f"Your new file will be named {sheetname}.xlsx")
 
 st = time.time()
 xls = pd.ExcelFile(filename)
-old_df = pd.read_excel(xls, sheet_name=sheetname)
+old_df = pd.read_excel(xls, sheet_name=sheetname, nrows=20)
 
 nd = old_df.to_numpy()
 
@@ -41,10 +41,17 @@ old_order = [
     "Row",
     "Shelf/Cabinet",
     "Box/Bay/Drawer",
+    "Classification", # new thing!
     "Artist (if known)",
     "Object Name",
     "Date",
-    "Culture",  # divided into culture and geography, needs to be done by hand, continent country city
+    "Geography Type (Place Made, Place Used, Place Depicted, Place Found). Default is 'Place Made'", # was Culture # divided into culture and geography, needs to be done by hand, continent country city
+    "Geography (Continent)",
+    "Geography (Country)",
+    "Geography (state/region/island)",
+    "Geography (City)",
+    "Other Geography (to be added to TMS manually)",
+    "Culture",
     "Materials",
     "Dimensions (H x W x D cm)",
     "Dimensions (H x W x D in)",
@@ -272,6 +279,7 @@ convert = {
     "Date": "Date",
     # "Culture": "Culture", # maybe have it be blank for now, only going to use for indeginous groups
     "Culture": "Culture",
+    "Culture (Tribal Groups)": "Culture",
     "Materials": "Medium",
     "Dimensions (H x W x D cm)": "Dimensions",
     "Dimensions (H x W x D in)": "Notes",
@@ -285,6 +293,14 @@ convert = {
     "Object Needs": "Notes",
     "Object Notes": "Notes",
     "2020-22 Inventory": "Notes",
+    "Geography Type (Place Made, Place Used, Place Depicted, Place Found). Default is 'Place Made'": "Geography Type",
+    "Classification": "Classification",
+    "Geography (Continent)": "Continent",
+    "Geography (Country)": "Country",
+    "Geography (state/region/island)": "State/Province",
+    "Geography (City)": "City",
+    "Other Geography (to be added to TMS manually)":"Notes",
+    "On loan / not at MAC": "Notes",
 }
 
 # get list of locations
@@ -345,7 +361,8 @@ for j in nd:
                 if new_col == "Notes":
                     # print(type(notes_str), type(old_col), type(column_val))
                     notes_str = notes_str + old_col + ": " + str(column_val) + "\n"
-                    tms_list[new_order.index(new_col)] = notes_str.capitalize()
+                    print(notes_str)
+                    # tms_list[new_order.index(new_col)] = notes_str.capitalize()
                 if new_col == "Constituent1" or new_col == "Culture":
                     tms_list[new_order.index(new_col)] = string.capwords(column_val, sep = None)
                 elif new_col == None:
@@ -355,7 +372,7 @@ for j in nd:
                         tms_list[new_order.index(new_col)] = column_val.capitalize()
                     else:
                         tms_list[new_order.index(new_col)] = column_val
-
+    tms_list[new_order.index("Notes")] = notes_str.capitalize()
     tms_nd = np.append(tms_nd, np.array([tms_list]), axis=0)
 
 

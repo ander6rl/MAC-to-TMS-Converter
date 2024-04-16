@@ -5,6 +5,8 @@ import time
 import string
 from datetime import date
 import logging
+import os
+import sys
 
 # Program for transforming xlsx file format to proper format for importing into TMS
 logging.basicConfig(level=logging.INFO)
@@ -50,7 +52,6 @@ def main():
     # sheetname = sheetname + '_' + str(rowend)
 
     logger.info(f"Your new file will be named {sheetname}.xlsx")
-
 
     st = time.time()
     xls = pd.ExcelFile(filename)
@@ -101,11 +102,6 @@ def main():
         "Object Needs", # not getting added to notes
         "Object Notes", #not getting added to notes?
     ]
-
-    """
-    ObjectID	Object Number	Sort Number	Department	Classification	Accession Method	Accession Date	Object Status	Constituent1	Constituent2	Constituent3	Constituent4	Constituent5	Title1	Title2	Object Name	Date	Begin ISO Date	End ISO Date	Date  Date Remarks	Medium	Dimensions	Description	Credit Line	Catalogue Raisonné	Portfolio/Series	Paper/Support	Signed	Mark(s)	Inscription(s)	Alternate Number1	Alternate Number2	Culture	Period	Object Type	Notes	Label Text	Curatorial Remarks	Provenance	Bibliography	State/Proof	Exhibition History	Published References	Copyright	Curator Approved	Public Access	On View	Accountability	Virtual Object	Location	Location Date	Accession Value	Currency	Stated Date	Exchange Rate	Exchange Rate Date	Valuation Purpose2	Stated Value2	Currency2	Stated Date2	Exchange Rate2	Exchange Rate Date2	Text Entry1	Text Entry2	Text Entry3	Text Entry4	Text Entry5	Text Entry6	Text Entry7	Text Entry8	Text Entry9	Text Entry10	Field Value1	Value Date1	Field Value2	Value Date2	Field Value3	Value Date3	Field Value4	Value Date4	Field Value5	Value Date5	Field Value6	Value Date6	Field Value7	Value Date7	Field Value8	Value Date8	Field Value9	Value Date9	Field Value10	Value Date10	Attributes1	Attributes2	Attributes3	Attributes4	Attributes5	Attributes6	Attributes7	Attributes8	Geography Type	Continent	Country	State/Province	County/Subdivision	City	Township	River	Locale	Locus	Verbatim Latitude	Verbatim Longitude	Elevation	Site	Event	Loan	Lender Object Number
-
-    """
 
     new_order = [
         "ObjectID",
@@ -375,6 +371,11 @@ def main():
                         tms_list[new_order.index(new_col)] = "Prints"
                     elif column_val.lower() == "textiles":
                         tms_list[new_order.index(new_col)] = "Textile"
+                    # if column val contains arms or armour set to arms and armor
+                    elif "armour" in column_val.lower():
+                        tms_list[new_order.index(new_col)] = "Arms and Armor"
+                    elif "decorative arts" in column_val.lower():
+                        tms_list[new_order.index(new_col)] = "Decorative Art"
                     else:
                         tms_list[new_order.index(new_col)] = column_val
                 elif new_col == "Notes":
@@ -395,44 +396,66 @@ def main():
                     else:
                         # Otherwise, process the date as usual
                         tms_list[new_order.index("Date")] = column_val
+                        print("----column_val:", column_val)  # Debugging
                         firstdate = ""
                         enddate = ""
                         splitor = None
                         if "or" in column_val:
                             splitor = column_val.split("or")
-                        # ...
-                        # ...
+                        print("splitor:", splitor)  # Debugging
                         if "-" in column_val:
                             if splitor:
                                 splitdate = splitor[0].split("-")
+                                print("1splitdate:", splitdate)  # Debugging
                                 firstdate = splitdate[0].strip().lstrip("ca.")  # Strip "ca." from the start
+                                print("firstdate:", firstdate)  # Debugging
                                 splitdate = splitor[1].split("-")
+                                print("2splitdate:", splitdate)  # Debugging
                                 if len(splitdate) == 2:
                                     enddate = splitdate[1].strip()
                                 else:
                                     enddate = splitdate[0].strip()
+                                print("enddate:", enddate)  # Debugging
                                 # Check if "BC" or "BCE" is present in either date
-                                if "BC" in firstdate or "BCE" in firstdate:
-                                    firstdate = "-" + firstdate.replace("BC", "").replace("BCE", "").strip()  # Convert first date to negative number and strip "BC" or "BCE"
+
+                                # check end date fist if in end date make both negative
+                                # then elif check first date and then only set first date to negative
+
                                 if "BC" in enddate or "BCE" in enddate:
-                                    enddate = "-" + enddate.replace("BC", "").replace("BCE", "").strip()  # Convert end date to negative number and strip "BC" or "BCE"
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "-" + ''.join(filter(str.isdigit, enddate))
+                                elif "BC" in firstdate or "BCE" in firstdate:
+                                    firstdate = "-" + ''.join(filter(str.isdigit, firstdate))
+
                             else:
                                 splitdate = column_val.split("-")
+                                print("splitdate:", splitdate)  # Debugging
                                 firstdate = splitdate[0].strip().lstrip("ca.")  # Strip "ca." from the start
+                                print("firstdate:", firstdate)  # Debugging
                                 enddate = splitdate[1].strip()
+                                print("enddate:", enddate)  # Debugging
                                 # Check if "BC" or "BCE" is present in either date
-                                if "BC" in firstdate or "BCE" in firstdate:
-                                    firstdate = "-" + firstdate.replace("BC", "").replace("BCE", "").strip()  # Convert first date to negative number and strip "BC" or "BCE"
+                                # check end date fist if in end date make both negative
+                                # then elif check first date and then only set first date to negative
+
                                 if "BC" in enddate or "BCE" in enddate:
-                                    enddate = "-" + enddate.replace("BC", "").replace("BCE", "").strip()  # Convert end date to negative number and strip "BC" or "BCE"
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "-" + "".join(
+                                        filter(str.isdigit, enddate)
+                                    )
+                                elif "BC" in firstdate or "BCE" in firstdate:
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+
                             tms_list[new_order.index("Begin ISO Date")] = firstdate
                             tms_list[new_order.index("End ISO Date")] = enddate
-# ...
-
-# ...
-
-                # ...
-
+                            print("----Final firstdate:", firstdate)  # Debugging
+                            print("----Final enddate:", enddate)
 
                 else:
                     if column_val.lower() == "nan":  # Check if column_val is "nan"
@@ -568,7 +591,23 @@ def main():
     newer_df = pd.DataFrame(tms_nd, columns=new_order)
     # del newer_df[newer_df.columns[0]]
     sheetname = sheetname + ".xlsx"
-    newer_df.to_excel(sheetname)
+    while True:
+        # Attempt to write to the file, handle permission error
+        try:
+            newer_df.to_excel(sheetname, index=False)
+            print("File written successfully!")
+            break  # Exit the loop if writing is successful
+        except PermissionError:
+            print(
+                "Permission Error: The file is already open. Please close the file and try again."
+            )
+            choice = input("Do you want to try again? (yes/no): ").lower()
+            if choice != "yes":
+                print("Exiting program.")
+                sys.exit(1)
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            break  # Exit the loop if any other error occurs
     et = time.time()
     elapsed_time = et - st
     print("Completed!")

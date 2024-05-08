@@ -5,6 +5,14 @@ import time
 import string
 from datetime import date
 import logging
+import os
+import sys
+
+# This program is for converting the MAC collection excel format to the proper TMS formatting for the Importer Tool.
+# Author: Rebecca Anderson
+# Version: 05/08/2024
+
+# If you have any questions about this code, email me at ander6rl@dukes.jmu.edu
 
 # Program for transforming xlsx file format to proper format for importing into TMS
 logging.basicConfig(level=logging.INFO)
@@ -27,8 +35,36 @@ def check_keywords(column_val):
         return "(not assigned)"
 
 
+def split_and_save_excel_files(data, new_order, accession_date, sheetname):
+    num_splits = math.ceil(len(data) / 200)
+    for i in range(num_splits):
+        start_index = i * 200
+        end_index = min((i + 1) * 200, len(data))
+        split_data = data[start_index:end_index]
+        df = pd.DataFrame(split_data, columns=new_order)
+        filename = f"{sheetname}_part_{i + 1}.xlsx"
+        while True:
+            try:
+                df.to_excel(filename, index=False)
+                print(f"File '{filename}' written successfully!")
+                break
+            except PermissionError:
+                print(
+                    "Permission Error: The file is already open. Please close the file and try again."
+                )
+                choice = input("Do you want to try again? (yes/no): ").lower()
+                if choice != "yes":
+                    print("Exiting program.")
+                    sys.exit(1)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                break
+
+
 def main():
-    logger.info("This is the Convert to TMS format tool, for converting the MAC collection excel format to the proper TMS formatting the the Importer Tool.")
+    logger.info(
+        "This is the Convert to TMS format tool, for converting the MAC collection excel format to the proper TMS formatting the the Importer Tool."
+    )
     filename = "FINAL_MAC"
     filename = filename + ".xlsx"
     print(f"File to convert: {filename}\n")
@@ -36,6 +72,7 @@ def main():
     # if (input("Is this correct? (y/n)") == 'n'):
 
     sheetname = input("Name of sheet: ")
+    accession_date = input("What is the accession year? ").strip()
     year = 2024
     if sheetname.isdigit():
         year = int(sheetname)
@@ -50,7 +87,6 @@ def main():
     # sheetname = sheetname + '_' + str(rowend)
 
     logger.info(f"Your new file will be named {sheetname}.xlsx")
-
 
     st = time.time()
     xls = pd.ExcelFile(filename)
@@ -98,14 +134,9 @@ def main():
         "Flat File Folder?",
         "Scanned?",
         "Valuation",
-        "Object Needs", # not getting added to notes
-        "Object Notes", #not getting added to notes?
+        "Object Needs",  # not getting added to notes
+        "Object Notes",  # not getting added to notes?
     ]
-
-    """
-    ObjectID	Object Number	Sort Number	Department	Classification	Accession Method	Accession Date	Object Status	Constituent1	Constituent2	Constituent3	Constituent4	Constituent5	Title1	Title2	Object Name	Date	Begin ISO Date	End ISO Date	Date  Date Remarks	Medium	Dimensions	Description	Credit Line	Catalogue Raisonné	Portfolio/Series	Paper/Support	Signed	Mark(s)	Inscription(s)	Alternate Number1	Alternate Number2	Culture	Period	Object Type	Notes	Label Text	Curatorial Remarks	Provenance	Bibliography	State/Proof	Exhibition History	Published References	Copyright	Curator Approved	Public Access	On View	Accountability	Virtual Object	Location	Location Date	Accession Value	Currency	Stated Date	Exchange Rate	Exchange Rate Date	Valuation Purpose2	Stated Value2	Currency2	Stated Date2	Exchange Rate2	Exchange Rate Date2	Text Entry1	Text Entry2	Text Entry3	Text Entry4	Text Entry5	Text Entry6	Text Entry7	Text Entry8	Text Entry9	Text Entry10	Field Value1	Value Date1	Field Value2	Value Date2	Field Value3	Value Date3	Field Value4	Value Date4	Field Value5	Value Date5	Field Value6	Value Date6	Field Value7	Value Date7	Field Value8	Value Date8	Field Value9	Value Date9	Field Value10	Value Date10	Attributes1	Attributes2	Attributes3	Attributes4	Attributes5	Attributes6	Attributes7	Attributes8	Geography Type	Continent	Country	State/Province	County/Subdivision	City	Township	River	Locale	Locus	Verbatim Latitude	Verbatim Longitude	Elevation	Site	Event	Loan	Lender Object Number
-
-    """
 
     new_order = [
         "ObjectID",
@@ -366,25 +397,84 @@ def main():
             if pd.notnull(column_val):  # Check if the column value is not null
                 old_col = Column_Index_Dictionary_old.get(i)
                 new_col = convert.get(old_col)
+
                 if new_col is None:  # If new column not found, skip
                     continue
+
                 elif new_col == "Classification":
+                    # print("-----------------")
+                    # print("Classification: ", column_val)
                     if column_val.strip() == "" or column_val.lower() == "nan":
                         tms_list[new_order.index(new_col)] = "(not assigned)"
                     elif column_val.lower() == "print":
                         tms_list[new_order.index(new_col)] = "Prints"
                     elif column_val.lower() == "textiles":
                         tms_list[new_order.index(new_col)] = "Textile"
+                    # if column val contains arms or armour set to arms and armor
+                    elif "armour" in column_val.lower():
+                        tms_list[new_order.index(new_col)] = "Arms and Armor"
+                    elif "decorative arts" in column_val.lower():
+                        tms_list[new_order.index(new_col)] = "Decorative Art"
+                    elif "paintings" in column_val.lower():
+                        tms_list[new_order.index(new_col)] = "Painting"
+                    elif (
+                        "religious" in column_val.lower()
+                        or "funerary" in column_val.lower()
+                    ):
+                        tms_list[new_order.index(new_col)] = (
+                            "Religious and funerary items"
+                        )
+                    elif (
+                        "jewelry" in column_val.lower()
+                        or "personal" in column_val.lower()
+                    ):
+                        tms_list[new_order.index(new_col)] = (
+                            "Jewelry and personal items"
+                        )
+                    # elif (
+                    #     "books"
+                    #     or "documentation" in column_val.lower()
+                    # ):
+                    #     tms_list[new_order.index(new_col)] = (
+                    #         "Books, Manuscripts, Documents"
+                    #     )
                     else:
                         tms_list[new_order.index(new_col)] = column_val
+                    # print("Classification: ", tms_list[new_order.index(new_col)])
+                    # print("-----------------")
+                elif new_col == "Accession Value" and column_val.lower() != "nan":
+                    print("Old Accession Value: ", column_val)
+                    if column_val.strip() != "" and "(" not in column_val:
+                        tms_list[new_order.index("Currency")] = "US $"
+                        tms_list[new_order.index(new_col)] = column_val
+                        tms_list[new_order.index("Stated Date")] = date.today()
+                    elif "(" in column_val:
+                        year = column_val.split("(")[-1].split(")")[0]
+                        column_val = column_val.replace(f"({year})", "").strip()
+                        tms_list[new_order.index("Stated Date")] = f"{year}-01-01"
+                        tms_list[new_order.index("Currency")] = "US $"
+                        tms_list[new_order.index(new_col)] = column_val
+                    print("New Accession Value: ", tms_list[new_order.index(new_col)])
+                elif new_col == "Stated Date":
+                    continue
+                elif new_col == "Currency":
+                    continue
                 elif new_col == "Notes":
                     accession_method = check_keywords(column_val)
                     if accession_method:
                         tms_list[new_order.index("Accession Method")] = accession_method
 
                     # Append the notes to notes_str
+
+                    if column_val.lower() == "nan":
+                        column_val = ""
+
                     notes_str += f"{old_col}: {column_val}\n"
-                    if old_col.lower() == "row" or old_col.lower() == "shelf/cabinet" or old_col.lower() == "box/bay/drawer":
+                    if (
+                        old_col.lower() == "row"
+                        or old_col.lower() == "shelf/cabinet"
+                        or old_col.lower() == "box/bay/drawer"
+                    ):
                         location_str += f"{old_col}: {column_val}\n"
 
                 # ...
@@ -395,180 +485,113 @@ def main():
                     else:
                         # Otherwise, process the date as usual
                         tms_list[new_order.index("Date")] = column_val
+                        # print("----column_val:", column_val)  # Debugging
                         firstdate = ""
                         enddate = ""
                         splitor = None
                         if "or" in column_val:
                             splitor = column_val.split("or")
-                        # ...
-                        # ...
+                        # print("splitor:", splitor)  # Debugging
+                        print(column_val)
                         if "-" in column_val:
                             if splitor:
                                 splitdate = splitor[0].split("-")
-                                firstdate = splitdate[0].strip().lstrip("ca.")  # Strip "ca." from the start
+                                # print("1splitdate:", splitdate)  # Debugging
+                                firstdate = (
+                                    splitdate[0].strip().lstrip("ca.")
+                                )  # Strip "ca." from the start
+                                # print("firstdate:", firstdate)  # Debugging
                                 splitdate = splitor[1].split("-")
+                                # print("2splitdate:", splitdate)  # Debugging
                                 if len(splitdate) == 2:
                                     enddate = splitdate[1].strip()
                                 else:
                                     enddate = splitdate[0].strip()
+                                # print("enddate:", enddate)  # Debugging
                                 # Check if "BC" or "BCE" is present in either date
-                                if "BC" in firstdate or "BCE" in firstdate:
-                                    firstdate = "-" + firstdate.replace("BC", "").replace("BCE", "").strip()  # Convert first date to negative number and strip "BC" or "BCE"
+
+                                # check end date fist if in end date make both negative
+                                # then elif check first date and then only set first date to negative
+
                                 if "BC" in enddate or "BCE" in enddate:
-                                    enddate = "-" + enddate.replace("BC", "").replace("BCE", "").strip()  # Convert end date to negative number and strip "BC" or "BCE"
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "-" + "".join(
+                                        filter(str.isdigit, enddate)
+                                    )
+                                elif "BC" in firstdate or "BCE" in firstdate:
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "".join(filter(str.isdigit, enddate))
+                                else:
+                                    firstdate = "".join(filter(str.isdigit, firstdate))
+                                    enddate = "".join(filter(str.isdigit, enddate))
+
                             else:
                                 splitdate = column_val.split("-")
-                                firstdate = splitdate[0].strip().lstrip("ca.")  # Strip "ca." from the start
+                                # print("splitdate:", splitdate)  # Debugging
+                                firstdate = (
+                                    splitdate[0].strip().lstrip("ca.")
+                                )  # Strip "ca." from the start
+                                # print("firstdate:", firstdate)  # Debugging
                                 enddate = splitdate[1].strip()
+                                # print("enddate:", enddate)  # Debugging
                                 # Check if "BC" or "BCE" is present in either date
-                                if "BC" in firstdate or "BCE" in firstdate:
-                                    firstdate = "-" + firstdate.replace("BC", "").replace("BCE", "").strip()  # Convert first date to negative number and strip "BC" or "BCE"
+                                # check end date fist if in end date make both negative
+                                # then elif check first date and then only set first date to negative
+
                                 if "BC" in enddate or "BCE" in enddate:
-                                    enddate = "-" + enddate.replace("BC", "").replace("BCE", "").strip()  # Convert end date to negative number and strip "BC" or "BCE"
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "-" + "".join(
+                                        filter(str.isdigit, enddate)
+                                    )
+                                elif "BC" in firstdate or "BCE" in firstdate:
+                                    firstdate = "-" + "".join(
+                                        filter(str.isdigit, firstdate)
+                                    )
+                                    enddate = "".join(filter(str.isdigit, enddate))
+                                else:
+                                    firstdate = "".join(filter(str.isdigit, firstdate))
+                                    enddate = "".join(filter(str.isdigit, enddate))
+
                             tms_list[new_order.index("Begin ISO Date")] = firstdate
                             tms_list[new_order.index("End ISO Date")] = enddate
-# ...
-
-# ...
-
-                # ...
-
+                            # print("----Final firstdate:", firstdate)  # Debugging
+                            # print("----Final enddate:", enddate)
 
                 else:
                     if column_val.lower() == "nan":  # Check if column_val is "nan"
                         column_val = ""  # Replace "nan" with empty string
+
+                    accession_method = check_keywords(column_val)
+                    if accession_method:
+                        tms_list[new_order.index("Accession Method")] = accession_method
+
                     if new_col == "Constituent1" or new_col == "Culture":
-                        tms_list[new_order.index(new_col)] = string.capwords(column_val, sep=None)
+                        tms_list[new_order.index(new_col)] = string.capwords(
+                            column_val, sep=None
+                        )
                     else:
                         tms_list[new_order.index(new_col)] = column_val
 
                     if "gift" in column_val.lower():
                         is_gift = True
 
-        # if is_gift:
-        #     tms_list[new_order.index("Accession Method")] = "Gift"
-        # else:
-        #     tms_list[new_order.index("Accession Method")] = "(not assigned)"
+        tms_list[new_order.index("Accession Date")] = accession_date + "-01-01"
         tms_list[new_order.index("Location")] = "Festival, Room 1000"
         tms_list[new_order.index("Notes")] = notes_str
         tms_nd = np.append(tms_nd, np.array([tms_list]), axis=0)
 
-    # for j in nd:
-    #     # print(j)
-    #     notes_str = ""
-    #     location_str = ""
-    #     # makes a new tms_list for the object with enough spaces for each of the columns in the tms excel sheet
-    #     tms_list = [None] * len(new_order)
-    #     # print(len(tms_list))
-    #     tms_list[new_order.index("Department")] = "Madison Art Collection"
-    #     tms_list[new_order.index("Object Status")] = "Accessioned Object"
-    #     # current_date = datetime.date.today()
-    #     # tms_list[new_order.index("Location Date")] = current_date.strftime.today.strftime(
-    #     #     "%m-%d-%Y"
-    #     # )
-    #     tms_list[new_order.index("Location Date")] = date.today()
-    #     # loops through each of the elements for an object from the old spreadsheet
-    #     for i in range(0, len(j)):
-    #         # get the actual value in the current column for the object
-    #         column_val = j[i]
-    #         column_val = str(column_val)
-    #         if not isinstance(column_val, float):
-    #             # if True:
-    #             # print(type(column_val), column_val)
-    #             old_col = Column_Index_Dictionary_old.get(i)
-    #             if old_col == "Object Notes":
-    #                 notes_str = notes_str + old_col + ": " + str(column_val) + "\n"
-    #                 # print(notes_str)
-    #                 if "gift" in column_val.lower():
-    #                     tms_list[new_order.index("Accession Method")] = "Gift"
-    #             elif old_col == "Accession Number":
-    #                 new_col = convert.get(old_col)
-    #                 tms_list[new_order.index(new_col)] = column_val
-    #                 splitdate = column_val.split(".")
-
-    #                 tms_list[new_order.index("Accession Date")] = splitdate[0]
-
-    #             elif old_col == "Date":
-    #                 tms_list[new_order.index("Date")] = column_val
-    #                 column_val = str(column_val)
-    #                 firstdate = ""
-    #                 enddate = ""
-    #                 splitor = None
-    #                 if "or" in column_val:
-    #                     splitor = column_val.split("or")
-    #                 # print(splitor)
-    #                 if "-" in column_val:
-    #                     # HANDLE OR CASES
-    #                     if splitor != None:
-    #                         splitdate = splitor[0].split("-")
-    #                         firstdate = splitdate[0]
-
-    #                         splitdate = splitor[1].split("-")
-    #                         if len(splitdate) == 2:
-    #                             enddate = splitdate[1]
-    #                         else:
-    #                             enddate = splitdate[0]
-
-    #                     else:
-    #                         splitdate = column_val.split("-")
-    #                         firstdate = splitdate[0]
-    #                         enddate = splitdate[1]
-
-    #                         # if BCE is in enddate, add to firstdate
-    #                         if "BCE" in enddate:
-    #                             firstdate += " BCE"
-    #                         elif "CE" in enddate or "CE" in firstdate:
-    #                             firstdate = firstdate.replace("CE", "")
-    #                             enddate = enddate.replace("CE", "")
-
-    #                     # check to see if CE is in (not BCE) and remove CE
-    #                     # if "CE" in firstdate and "BCE" not in firstdate:
-
-    #                     tms_list[new_order.index("Begin ISO Date")] = firstdate
-    #                     tms_list[new_order.index("End ISO Date")] = enddate
-    #             else:
-    #                 new_col = convert.get(old_col)
-    #                 print(old_col)
-    #                 if new_col == "Notes":
-    #                     # print(type(notes_str), type(old_col), type(column_val))
-    #                     notes_str = notes_str + old_col + ": " + str(column_val) + "\n"
-
-    #                     if (
-    #                         old_col == "Row"
-    #                         or old_col == "Shelf/Cabinet"
-    #                         or old_col == "Box/Bay/Drawer"
-    #                     ):
-    #                         location_str = (
-    #                             location_str + old_col + ": " + str(column_val) + "\n"
-    #                         )
-    #                         # changed to default location
-    #                         tms_list[new_order.index("Location")] = (
-    #                             "Festival, Room 1000"
-    #                         )
-
-    #                     tms_list[new_order.index(new_col)] = str(column_val)
-    #                     # print(notes_str)
-    #                     # tms_list[new_order.index(new_col)] = notes_str.capitalize()
-    #                 if new_col == "Constituent1" or new_col == "Culture":
-    #                     tms_list[new_order.index(new_col)] = string.capwords(
-    #                         column_val, sep=None
-    #                     )
-    #                 elif new_col == None:
-    #                     break
-    #                 else:
-    #                     if isinstance(column_val, str):
-    #                         tms_list[new_order.index(new_col)] = column_val
-    #                     else:
-    #                         tms_list[new_order.index(new_col)] = column_val
-    #     tms_list[new_order.index("Location")] = location_str
-    #     tms_list[new_order.index("Notes")] = notes_str
-    #     # print(notes_str)
-    #     tms_nd = np.append(tms_nd, np.array([tms_list]), axis=0)
-
     newer_df = pd.DataFrame(tms_nd, columns=new_order)
     # del newer_df[newer_df.columns[0]]
     sheetname = sheetname + ".xlsx"
-    newer_df.to_excel(sheetname)
+
+    split_and_save_excel_files(tms_nd, new_order, accession_date, sheetname)
+
     et = time.time()
     elapsed_time = et - st
     print("Completed!")
